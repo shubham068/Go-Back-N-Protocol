@@ -35,6 +35,8 @@ class RecieverThread(Thread):
 
     def run(self):
         print("Reciever is up and running")
+        fname="Data_received_log.txt"
+        self.logfile=open(os.curdir + "/" + fname, "w+")
         global expectedseqnum
         while 1:
             prob = random.uniform(0, 1)
@@ -44,9 +46,17 @@ class RecieverThread(Thread):
             conn.close()
             print (receivedpkt)
             pktno = self.extract(receivedpkt)
-            if prob <= p:
+            if prob >= p:
+                
                 if pktno == expectedseqnum:
                     expectedseqnum = expectedseqnum + 1
+                    self.logfile.write(time.ctime(time.time()) + "\t" + "Packet Number "+
+                        str(pktno) + " has arrived correctly.\n")
+                else:
+                    self.logfile.write(time.ctime(time.time()) + "\t" + "Packet Number "+
+                        str(pktno) + " arrived, expected packet number is " + str(expectedseqnum)+"\n")
+
+                self.logfile.flush()
                 asender = ACKSenderThread(ACKSIP, ACKSPORT, expectedseqnum-1)
                 asender.start()
                 threads.append(asender)
@@ -79,9 +89,10 @@ sock.listen(100)
 reciever = RecieverThread(RecieverIP, RecieverPORT, sock)
 reciever.start()
 threads.append(reciever)
-time.sleep(5)
+#time.sleep(1)
 # Starting SenderThread
 
 for t in threads:
     t.join()
+
 sock.close()
